@@ -10,7 +10,7 @@ from IPython import get_ipython
 import matplotlib.pyplot as plt
 from math import exp
     
-def G_LIF_at_x(alpha, x, encoder, J_bias):
+def G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc):
     
     J = alpha * x * encoder + J_bias
     
@@ -41,7 +41,9 @@ def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
         tuning_curve = []
         
         for x in x_linspace:
-            a = G_LIF_at_x(alpha, x, encoder, J_bias)
+            a = G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc)
+#            if x == 0:
+#                print(x, a, alpha, J_bias)
             tuning_curve.append(a)
         
         tuning_curves.append(np.array(tuning_curve))
