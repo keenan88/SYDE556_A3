@@ -24,6 +24,9 @@ def G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc):
 def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
     
     tuning_curves = []
+    alphas = []
+    J_biases = []
+    encoders = []
     
     
     for i in range(num_curves):
@@ -38,6 +41,10 @@ def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
         alpha = (K - 1) / (r - np.dot(x_int, encoder))
         J_bias = 1 - alpha * np.dot(x_int, encoder)
         
+        alphas.append(alpha)
+        J_biases.append(J_bias)
+        encoders.append(encoder)
+        
         tuning_curve = []
         
         for x in x_linspace:
@@ -48,7 +55,7 @@ def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
         
         tuning_curves.append(np.array(tuning_curve))
 
-    return tuning_curves
+    return tuning_curves, alphas, J_biases, encoders
 
 def get_RMSE_matrix(mat1, mat2):
     return round(np.sqrt(np.mean(np.square(mat1 - mat2))), 3)
