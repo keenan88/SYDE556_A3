@@ -13,6 +13,7 @@ from Q1 import G_LIF_at_x, generate_LIF_tuning_curves
 from Q2 import generate_signal
 
 
+
 if __name__ == "__main__":
     
     get_ipython().magic('clear')

@@ -21,7 +21,7 @@ def G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc):
         
     return G
 
-def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
+def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves, r = 2):
     
     tuning_curves = []
     alphas = []
@@ -34,7 +34,7 @@ def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves):
         a_max = np.random.uniform(100, 200)
         x_int = np.random.uniform(x_linspace[0], x_linspace[-1])
         encoder = np.random.choice(np.array([-1, 1]))
-        r = 2
+        
         
         # Alpha, J_bias
         K = 1 / (1 - exp((Tref - 1/a_max)/Trc))

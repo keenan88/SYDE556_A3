@@ -63,6 +63,8 @@ def generate_signal(T, dt, power_desired, limit_hz, seed):
     return x, y, xf_rads, X_w
 
 
+    
+
 if __name__ == "__main__":
     
     get_ipython().magic('clear')
