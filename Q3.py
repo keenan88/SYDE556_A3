@@ -32,11 +32,16 @@ if __name__ == "__main__":
     S = 41
     range_of_stims = np.linspace(-2, 2, S)
     
-    for N_neurons in [8, 16, 32, 64, 128, 256]:
+    neuron_counts = [8, 16, 32, 64, 128, 256]
+    run_len = 5
+    avgd_RMSEs = []
+    
+    for N_neurons in neuron_counts:
         
         RMSEs = []
         
-        for _ in range(5):
+        
+        for _ in range(run_len):
         
             tuning_curves, \
             alphas, \
@@ -113,9 +118,14 @@ if __name__ == "__main__":
             
             #print("RMSE: ", rmse)
             
-        print("Avgd RMSE for " + str(N_neurons) + " = " + str(sum(RMSEs) / 5))
+        avgd_RMSEs.append(sum(RMSEs) / run_len)
+        print("Avgd RMSE for " + str(N_neurons) + " = " + str(avgd_RMSEs[-1]))
 
-        
+    plt.loglog(neuron_counts, avgd_RMSEs)
+    plt.xlabel("Neuron Count")
+    plt.ylabel("RMSE")
+    plt.grid()
+    plt.title("Log-Log plot of RMSE vs Neuron Count")
 
 
 
