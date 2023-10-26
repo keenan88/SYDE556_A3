@@ -79,7 +79,8 @@ if __name__ == "__main__":
     range_of_stims = np.linspace(-1, 1, N_time_samples)
     r = 1
     
-    tuning_curves_x, alphas_x, J_biases_x, encoders_x = \
+    # Define encoders
+    _, alphas_x, J_biases_x, encoders_x = \
     generate_LIF_tuning_curves(range_of_stims, 
                                Tref, 
                                Trc, 
@@ -88,10 +89,13 @@ if __name__ == "__main__":
     
     stimulus_x =  0.5 * time
     x_spiking_output = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x)
+    
+    # Define decoders
     x_hat, decoders_x = decode_spiky_output(x_spiking_output, N_neurons, stimulus_x)
     plot_decoded_spiking_output(x_hat, stimulus_x, time)
     
-    tuning_curves_y, alphas_y, J_biases_y, encoders_y = \
+    # Define Encoders
+    _, alphas_y, J_biases_y, encoders_y = \
     generate_LIF_tuning_curves(range_of_stims, 
                                Tref, 
                                Trc, 
@@ -100,59 +104,70 @@ if __name__ == "__main__":
     
     stimulus_y = 2 * time
     y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y)
+    
+    # Define Decoders
     y_hat, decoders_y = decode_spiky_output(y_spiking_output, N_neurons, stimulus_y)
     plot_decoded_spiking_output(y_hat, stimulus_y, time)
     
+    # Define encoders
+    tuning_curves_z, alphas_z, J_biases_z, encoders_z = \
+    generate_LIF_tuning_curves(range_of_stims, 
+                               Tref, 
+                               Trc, 
+                               N_neurons,
+                               r)
     
-    # 4A)
-    """
+    # Define decoders
+    # Encoder for third neuron not specified, assumed 1 to 1 output
+    stimulus_z = time
+    z_spiking_output = generate_spiking_output(encoders_z, alphas_z, J_biases_z, stimulus_z)
+    z_hat, decoders_z = decode_spiky_output(z_spiking_output, N_neurons, stimulus_z)
+    plot_decoded_spiking_output(z_hat, stimulus_z, time)
+    
+    
+    # 5A)
+    
     stimulus_x_A = np.cos(3 * np.pi * time)
-    
     x_spiking_output_A = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x_A)
-    
     x_hat_A = (decoders_x * x_spiking_output_A).T
-    
-    plot_decoded_spiking_output(x_hat_A, stimulus_x_A, time)
-    
     
     stimulus_y_A = 0.5 * np.sin(2 * np.pi * time)
-    
     y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y_A)
-    
     y_hat_A = (decoders_y * y_spiking_output).T
     
-    plot_decoded_spiking_output(y_hat_A, stimulus_y_A, time)
-    
-    
+    summed_output = 2 * y_hat_A + 0.5 * x_hat_A
+    z_spiking_output = generate_spiking_output(encoders_z, alphas_z, J_biases_z, summed_output)
+    z_hat = (decoders_z * z_spiking_output).T
     z = 2 * stimulus_y_A + 0.5 * stimulus_x_A
-    z_hat = 2 * y_hat_A + 0.5 * x_hat_A
-    plot_decoded_spiking_output(z_hat, z , time)
-    """
-    # 4B)
-    
-    _, stimulus_x_A, _, _ = generate_signal(T, dt, 1, 8, 18976)
-    
-    x_spiking_output_A = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x_A)
-    
-    x_hat_A = (decoders_x * x_spiking_output_A).T
     
     plot_decoded_spiking_output(x_hat_A, stimulus_x_A, time)
-    
-    
-    _, stimulus_y_A, _, _= generate_signal(T, dt, 0.5, 5, 111)
-    
-    y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y_A)
-    
-    y_hat_A = (decoders_y * y_spiking_output).T
-    
     plot_decoded_spiking_output(y_hat_A, stimulus_y_A, time)
-    
-    
-    z = 2 * stimulus_y_A + 0.5 * stimulus_x_A
-    z_hat = 2 * y_hat_A + 0.5 * x_hat_A
     plot_decoded_spiking_output(z_hat, z , time)
     
+    
+    
+    
+    # 5B)
+    
+    _, stimulus_x_A, _, _ = generate_signal(T, dt, 1, 8, 18976)
+    x_spiking_output_A = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x_A)
+    x_hat_A = (decoders_x * x_spiking_output_A).T
+    
+    _, stimulus_y_A, _, _= generate_signal(T, dt, 0.5, 5, 111)
+    y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y_A)
+    y_hat_A = (decoders_y * y_spiking_output).T
+    
+    z = 2 * stimulus_y_A + 0.5 * stimulus_x_A
+    summed_output = 2 * y_hat_A + 0.5 * x_hat_A
+    z_spiking_output = generate_spiking_output(encoders_z, alphas_z, J_biases_z, summed_output)
 
+    z_hat = (decoders_z * z_spiking_output).T
+    
+    plot_decoded_spiking_output(x_hat_A, stimulus_x_A, time)
+    plot_decoded_spiking_output(y_hat_A, stimulus_y_A, time)
+    plot_decoded_spiking_output(z_hat, z , time)
+        
+    
 
 
 
