@@ -6,7 +6,10 @@ Created on Thu Sep 28 13:09:44 2023
 """
 
 import numpy as np
-from IPython import get_ipython
+try:
+    from IPython import get_ipython
+except:
+    pass
 import matplotlib.pyplot as plt
 from math import exp
 from scipy.fft import fftfreq
@@ -110,8 +113,11 @@ def get_pos_syn_filt(T, N):
 
 if __name__ == "__main__":
     
-    get_ipython().magic('clear')
-    get_ipython().magic('reset -f')
+    try:
+        get_ipython().magic('clear')
+        get_ipython().magic('reset -f')
+    except:
+        pass
     
     np.random.seed(18945)   
     

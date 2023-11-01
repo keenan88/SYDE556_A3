@@ -6,7 +6,10 @@ Created on Thu Sep 28 13:09:44 2023
 """
 
 import numpy as np
-from IPython import get_ipython
+try:
+    from IPython import get_ipython
+except:
+    pass
 import matplotlib.pyplot as plt
 
 from Q1 import generate_1D_LIF_neurons
@@ -14,9 +17,7 @@ from Q2 import get_neurons_spike_response_to_stimulus, filter_spikes, get_pos_sy
     
 def decode_spiky_output(N_neurons, A, stimulus):
     
-    ro = 0.0001 * 200
-    normalizer = N_neurons * ro * ro * np.eye(N_neurons)
-    decoders = np.linalg.inv(A * A.T + normalizer) * A * np.matrix(stimulus).T 
+    decoders = np.linalg.pinv(A * A.T) * A * np.matrix(stimulus).T 
     decoders = decoders.T
     
     reconstructed_stim = (decoders * A).T
@@ -35,8 +36,11 @@ def plot_decoded_spiking_output(x_hat, stimulus_x, time, title):
 
 if __name__ == "__main__":
     
-    get_ipython().magic('clear')
-    get_ipython().magic('reset -f')
+    try:
+        get_ipython().magic('clear')
+        get_ipython().magic('reset -f')
+    except:
+        pass
     
     np.random.seed(189)
 
@@ -71,32 +75,31 @@ if __name__ == "__main__":
     plt.plot(time, reconstructed_x, label="Reconstructed X", color='blue')
     plt.plot(time, stimulus_x, label = "Original X", color='black')    
     plt.grid()
+    plt.legend()
     plt.show()
     
     plt.plot(time, reconstructed_y, label="Reconstructed y", color='blue')
     plt.plot(time, stimulus_y, label = "Original Y", color='black')    
     plt.grid()
+    plt.legend()
+    plt.show()
+    
+    # 4A)
+    
+    # Apply decoders
+    stimulus_x = time - 1
+    x_spike_response = get_neurons_spike_response_to_stimulus(neuronsX, stimulus_x, dt)
+    x_spike_response = filter_spikes(x_spike_response, h)
+    
+    decoded_spiking_output = (decoders_x * x_spike_response).T 
+    
+    plt.plot(time, decoded_spiking_output, label="Reconstructed X", color='blue')
+    plt.plot(time, stimulus_x, label = "Original X", color='black')    
+    plt.grid()
     plt.show()
     
     
-    
-    # Define decoders
-#    
-    
-    # Validation. Looks good, x_hat is roughly decoding x, y_hay is roughly decoding y.
-#    plot_decoded_spiking_output(x_hat, stimulus_x, time, "f(x) = 2x + 1")
-#    plot_decoded_spiking_output(y_hat, stimulus_y, time, "f(y) = y")
-    
-    
     """
-    # 4A)
-    
-    stimulus_x_A = time - 1
-    x_spiking_output_A = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x_A) # Resultant spike train from input t-1
-    # Why are we using the 2x + 1 decoder??
-    x_hat_A = (decoders_x * x_spiking_output_A).T # Best attempt at getting spikes back to state space, using original 2x+1 decoder
-    
-    
     stimulus_y_A = x_hat_A # Feed-forward best effort at t-1
     y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y_A) # Generate spikes from best effort at t-1
     y_hat_A = (decoders_y * y_spiking_output).T # Decode spikes, should hopefully look like t-1 
@@ -104,6 +107,7 @@ if __name__ == "__main__":
     
     plot_decoded_spiking_output(x_hat_A, stimulus_x_A, time, "x(t) = t - 1")
     plot_decoded_spiking_output(y_hat_A, stimulus_x_A, time, "x(t) = t - 1")
+    
     
     # 4B)
      

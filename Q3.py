@@ -6,7 +6,10 @@ Created on Thu Sep 28 13:09:44 2023
 """
 
 import numpy as np
-from IPython import get_ipython
+try:
+    from IPython import get_ipython
+except:
+    pass
 import matplotlib.pyplot as plt
 from Q1 import generate_1D_LIF_neurons
 from Q2 import generate_signal, get_neurons_spike_response_to_stimulus, \
@@ -15,9 +18,11 @@ from Q2 import generate_signal, get_neurons_spike_response_to_stimulus, \
 
 
 if __name__ == "__main__":
-    
-    get_ipython().magic('clear')
-    get_ipython().magic('reset -f')
+    try:
+        get_ipython().magic('clear')
+        get_ipython().magic('reset -f')
+    except:
+        pass
     
     np.random.seed(189)
 
@@ -57,10 +62,7 @@ if __name__ == "__main__":
             spikes = get_neurons_spike_response_to_stimulus(neurons, rnd_stim, dt)
             
             A = filter_spikes(spikes, h)
-            
-            ro = 0.00000000001 * 200
-            normalizer = N_neurons * ro * ro * np.eye(N_neurons)
-            decoders = np.linalg.inv(A * A.T + normalizer) * A * np.matrix(rnd_stim).T 
+            decoders = np.linalg.pinv(A * A.T) * A * np.matrix(rnd_stim).T 
             decoders = decoders.T
             
             reconstructed_stim = (decoders * A).T
@@ -83,8 +85,7 @@ if __name__ == "__main__":
     discussion_3B = """
         It is observed that as the number of neurons increases, the RMSE decreases.
         On a log-log plot, the behaviour is observed to be linear, suggesting some
-        kind of exponential relationship between the two variables, up until the
-        observed inflection point.
+        kind of exponential relationship between the two variables.
     """
 
 
