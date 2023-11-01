@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from Q1 import generate_1D_LIF_neurons
 from Q2 import get_neurons_spike_response_to_stimulus, filter_spikes, get_pos_syn_filt
     
-def decode_spiky_output(N_neurons, A, stimulus):
+def decode_spiky_output(A, stimulus):
     
     decoders = np.linalg.pinv(A * A.T) * A * np.matrix(stimulus).T 
     decoders = decoders.T
@@ -23,6 +23,7 @@ def decode_spiky_output(N_neurons, A, stimulus):
     reconstructed_stim = (decoders * A).T
     
     return decoders, reconstructed_stim
+
 
 def plot_decoded_spiking_output(x_hat, stimulus_x, time, title):
     plt.plot(time, x_hat, label="Reconstructed Stimulus")    
@@ -69,8 +70,8 @@ if __name__ == "__main__":
     y_spike_response = filter_spikes(y_spike_response, h)
     
     # Define decoders
-    decoders_x, reconstructed_x = decode_spiky_output(N_neurons, x_spike_response, stimulus_x)
-    decoders_y, reconstructed_y = decode_spiky_output(N_neurons, y_spike_response, stimulus_y)
+    decoders_x, reconstructed_x = decode_spiky_output(x_spike_response, stimulus_x)
+    decoders_y, reconstructed_y = decode_spiky_output(y_spike_response, stimulus_y)
 
     plt.plot(time, reconstructed_x, label="Reconstructed X", color='blue')
     plt.plot(time, stimulus_x, label = "Original X", color='black')    
