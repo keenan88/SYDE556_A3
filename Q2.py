@@ -9,27 +9,20 @@ import numpy as np
 from IPython import get_ipython
 import matplotlib.pyplot as plt
 from math import exp
-from Q1 import G_LIF_at_x
-from scipy.fft import fft, fftfreq
+from scipy.fft import fftfreq
 
     
-
-def generate_LIF_tuning_curves(x_linspace, Tref, Trc, alpha, J_bias):
-    
-    tuning_curves = []
-    
-
-    for encoder in [-1, 1]:
-    
-        tuning_curve = []
+"""
+def generate_LIF_tuning_curve(x_linspace, Tref, Trc, alpha, J_bias, encoder):
         
-        for x in x_linspace:
-            a = G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc)
-            tuning_curve.append(a)
-        
-        tuning_curves.append(np.array(tuning_curve))
-
-    return tuning_curves
+    tuning_curve = []
+    
+    for x in x_linspace:
+        a = G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc)
+        tuning_curve.append(a)
+    
+    return tuning_curve
+"""
 
 def generate_signal(T, dt, power_desired, limit_hz, seed):
     
@@ -38,7 +31,7 @@ def generate_signal(T, dt, power_desired, limit_hz, seed):
     limit_rads = limit_hz * 2 * np.pi
     
     N = int(T / dt)
-    x = np.linspace(0, T, N, endpoint=False)
+    t = np.linspace(0, T, N, endpoint=False)
     
     X_w = np.zeros((N,), dtype=complex)
     X_w[0] = np.random.normal(0, 1) + 1j*np.random.normal(0, 1) # Set 0 frequency
@@ -60,89 +53,50 @@ def generate_signal(T, dt, power_desired, limit_hz, seed):
     
     X_w = X_w * scaling_factor
     
-    return x, y, xf_rads, X_w
+    return t, y, xf_rads, X_w
 
-
+def get_neurons_spike_response_to_stimulus(neurons, stimulus, dt):
     
-
-if __name__ == "__main__":
-    
-    get_ipython().magic('clear')
-    get_ipython().magic('reset -f')
-    
-    np.random.seed(18945)
-
-    Tref = 2 / 1000 # Converted to seconds
-    Trc = 20 / 1000 # Converted to seconds
-    
-    N = 20
-    S = 41
-    dt = 0.001
-    x_linspace = np.linspace(-2, 2, S)
-    
-    x = 0.0 
-    a = 44.876
-    alpha = 1.844
-    J_bias = 1.569
-    
-    tuning_curves = generate_LIF_tuning_curves(x_linspace, Tref, Trc, alpha, J_bias)
-    
-    for tuning_curve in tuning_curves:
-        plt.plot(x_linspace, tuning_curve)
-
-    plt.title("1A) " + str(N) + " LIF Tuning Curves")
-    plt.xlabel("Current")
-    plt.ylabel("Firitng Rate (Hz)")
-    plt.xlim([x_linspace[0], x_linspace[-1]])
-    plt.grid()
-    plt.show() 
-    
-    T = 1
-    dt = 0.001
-    N = int(T / dt)
-    x, stimulus, xf_rads, X_w = generate_signal(T, dt, 1, 5, 18945)
-    
-    
-    voltages = []
     spikes = []
     Vth = 1
-    encoders = [-1, 1]
     
-    for encoder in encoders:
+    for neuron in neurons:
         v = 0
         i = 0
         
         spikes.append([])
-        voltages.append([])
         
         while i < len(stimulus):
             if v >= Vth:
                 v = 0
-                i += Tref * 1000 # Scaled to ms, since that is our step size here
-                voltages[-1].append(0)
-                voltages[-1].append(0)
+                i += neuron['Tref'] * 1000 # Scaled to ms, since that is our step size here
                 spikes[-1].append(1)
                 spikes[-1].append(0)
             else:
-                voltages[-1].append(v)
                 spikes[-1].append(0)
                 i += 1
                 
             if i < len(stimulus):
-                J = alpha * np.dot(encoder, stimulus[int(i)]) + J_bias
-                v += dt * (J - v) / Trc
-        
-        
+                dot = np.dot(neuron['encoder'], stimulus[int(i)])
+                J = neuron['alpha'] * dot + neuron['J_bias']
+                v += dt * (J - v) / neuron['Trc']
     
-    plt.plot(x, spikes[0], color='black')
-    plt.plot(x, -1 * np.array(spikes[1]), color='black')
-    
-    plt.plot(x, voltages[0])
-    plt.plot(x, -1 * np.array(voltages[1]))
-    plt.plot(x, stimulus)
-    plt.grid()
-    plt.show()
-    
+    return spikes
+
+def filter_spikes(N_neurons, N_time_samples, spikes, h):
+    A = np.zeros((N_neurons, N_time_samples))
+
+    for j in range(N_neurons):
+        for i in range(N_time_samples):
+            
+            if spikes[j][i]:
+                
+                A[j, i:] += spikes[j][i] * np.array(h[0: len(A[j]) - i])
+                
+                
+    return np.matrix(A)
+
+def get_pos_syn_filt(T, N):
     h = []
     time = np.linspace(0, T, N)
     Tau = 5 / 1000 # ms to s
@@ -151,41 +105,76 @@ if __name__ == "__main__":
        h.append(h_t)
        
     h = h / np.sum(h)
-       
-    plt.plot(time, h)
+    
+    return time, h
+
+if __name__ == "__main__":
+    
+    get_ipython().magic('clear')
+    get_ipython().magic('reset -f')
+    
+    np.random.seed(18945)   
+    
+    #x = 0.0 
+    #a = 44.876
+    #alpha = 1.844
+    #J_bias = 1.569
+    neurons = [
+        {'alpha': 1.844, 'J_bias' : 1.569, 'encoder': 1, 'Tref': 0.002, 'Trc': 0.02}, 
+        {'alpha': 1.844, 'J_bias' : 1.569, 'encoder': -1, 'Tref': 0.002, 'Trc': 0.02}
+    ]
+    
+    
+    T = 1
+    dt = 0.001
+    N_time_samples = int(T / dt)
+    rnd_stim_timescale, rnd_stim, rnd_stim_freq_scale, rnd_stim_comps = generate_signal(T, dt, 1, 5, 18945)
+    
+    spikes = get_neurons_spike_response_to_stimulus(neurons, rnd_stim, dt)
+    
+    plt.plot(rnd_stim_timescale, spikes[0], color='blue', label="Positive neuron spikes")
+    plt.plot(rnd_stim_timescale, spikes[1], color='green', label="Negative neuron spikes")
+    plt.plot(rnd_stim_timescale, rnd_stim, label="Stimulus", color="black")
+    plt.grid()
+    plt.legend()
+    plt.title("2) 2-neuron spiketrain response to random stimulus")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Stimulus & Voltage spikes")
     plt.show()
     
-    A = np.zeros((2, N))
+    # 2A) [DONE]
+    filter_time, h = get_pos_syn_filt(T, N_time_samples)
+       
+    plt.plot(filter_time, h)
+    plt.grid()
+    plt.title("2A) h(t) filter in time domain")
+    plt.xlabel("Time")
+    plt.ylabel("Magnitude")
+    plt.show()
+    
+    # 2B) [DONE]
+    A = filter_spikes(len(neurons), N_time_samples, spikes, h)
+                
 
-    for i in range(N):
-        
-        if spikes[0][i]:
-            
-            A[0, i:] += spikes[0][i] * np.array(h[0: len(A[0]) - i])
-            
-        if spikes[1][i]:
-            
-            A[1, i:] += spikes[1][i] * np.array(h[0: len(A[1]) - i])
-            
-            
     A = np.matrix(A)
 
-    decoders = np.linalg.inv(A * A.T) * A * np.matrix(stimulus).T
+    decoders = (np.linalg.inv(A * A.T) * A * np.matrix(rnd_stim).T).T
     
-    decoders = decoders.T
-    
-    x_hat = (decoders * A).T
+    reconstructed_stim = (decoders * A).T
 
-    plt.plot(time, x_hat, label="Reconstructed Stimulus")    
-    plt.plot(time, stimulus, label="Real Stimulus")
+    plt.plot(rnd_stim_timescale, reconstructed_stim, label="Reconstructed Stimulus")    
+    plt.plot(rnd_stim_timescale, rnd_stim, label="Real Stimulus")
     plt.grid()
+    plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Stimulus")
     plt.title("Real vs Reconstructed Stimulus")
+    plt.show()
     
-    rmse = np.sqrt(np.mean(np.square(x_hat.T - stimulus)))
+    # 2C [DONE]
+    rmse = np.sqrt(np.mean(np.square(reconstructed_stim.T - rnd_stim)))
     
-    print("RMSE: ", rmse)
+    print("RMSE (Reconstructed vs Actual Sim): ", rmse)
 
 
     

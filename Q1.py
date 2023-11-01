@@ -21,13 +21,12 @@ def G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc):
         
     return G
 
-def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves, r = 2):
+def generate_1D_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves, radius):
     
     tuning_curves = []
-    alphas = []
-    J_biases = []
-    encoders = []
+
     
+    neurons = []
     
     for i in range(num_curves):
         
@@ -38,24 +37,22 @@ def generate_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves, r = 2):
         
         # Alpha, J_bias
         K = 1 / (1 - exp((Tref - 1/a_max)/Trc))
-        alpha = (K - 1) / (r - np.dot(x_int, encoder))
+        alpha = (K - 1) / (radius - np.dot(x_int, encoder))
         J_bias = 1 - alpha * np.dot(x_int, encoder)
         
-        alphas.append(alpha)
-        J_biases.append(J_bias)
-        encoders.append(encoder)
+        neurons.append({'alpha': alpha, 'J_bias' : J_bias, 
+                        'encoder': encoder, 'Tref': Tref,
+                        'Trc' : Trc})
         
         tuning_curve = []
         
         for x in x_linspace:
             a = G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc)
-#            if x == 0:
-#                print(x, a, alpha, J_bias)
             tuning_curve.append(a)
         
         tuning_curves.append(np.array(tuning_curve))
 
-    return tuning_curves, alphas, J_biases, encoders
+    return tuning_curves, neurons
 
 def get_RMSE_matrix(mat1, mat2):
     return round(np.sqrt(np.mean(np.square(mat1 - mat2))), 3)
@@ -73,12 +70,13 @@ if __name__ == "__main__":
     
     N = 20
     S = 41
+    radius = 2
     x_linspace = np.linspace(-2, 2, S)
     
     # 1A) [DONE]
-    print("1.3B)")
+    print("1.1A)")
     
-    tuning_curves = generate_LIF_tuning_curves(x_linspace, Tref, Trc, N)
+    tuning_curves, _ = generate_1D_LIF_tuning_curves(x_linspace, Tref, Trc, N, radius)
     
     for tuning_curve in tuning_curves:
         plt.plot(x_linspace, tuning_curve)
@@ -90,7 +88,7 @@ if __name__ == "__main__":
     plt.grid()
     plt.show() 
     
-    #1B)
+    #1B) [DONE]
     
     A = np.matrix(tuning_curves)
     ro = 0.1 * 200

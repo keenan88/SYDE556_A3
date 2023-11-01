@@ -9,8 +9,9 @@ import numpy as np
 from IPython import get_ipython
 import matplotlib.pyplot as plt
 from math import exp
-from Q1 import G_LIF_at_x, generate_LIF_tuning_curves
-from Q2 import generate_signal
+from Q1 import generate_1D_LIF_tuning_curves
+from Q2 import generate_signal, get_neurons_spike_response_to_stimulus, \
+                get_pos_syn_filt, filter_spikes
 
 
 
@@ -27,97 +28,48 @@ if __name__ == "__main__":
     T = 1
     dt = 0.001
     N_time_samples = int(T / dt)
-    time, stimulus, _, _ = generate_signal(T, dt, 1, 5, 200)
+    rnd_stim_time, rnd_stim, _, _ = generate_signal(T, dt, 1, 5, 200)
     
     N_neurons = 20
-    S = 41
-    range_of_stims = np.linspace(-2, 2, S)
+    radius = 2
+    range_of_stims = np.linspace(-radius, radius, N_time_samples)
     
+    # 3A) [DONE?]
     neuron_counts = [8, 16, 32, 64, 128, 256]
     run_len = 5
     avgd_RMSEs = []
+    _, h = get_pos_syn_filt(T, N_time_samples)
     
     for N_neurons in neuron_counts:
         
         RMSEs = []
         
-        
         for _ in range(run_len):
         
-            tuning_curves, \
-            alphas, \
-            J_biases, \
-            encoders = generate_LIF_tuning_curves(range_of_stims, 
-                                                  Tref, 
-                                                  Trc, 
-                                                  N_neurons)
+            # Change up the group of neurons each iteration
+            _, neurons = generate_1D_LIF_tuning_curves(
+                range_of_stims, 
+                Tref, 
+                Trc, 
+                N_neurons,
+                radius
+            )
             
-            spikes = []
-            Vth = 1
+            # Some neurons do not spike at all!! This can cause matrix inversion
+            # problems with A * A.T during decoder calculation
+            spikes = get_neurons_spike_response_to_stimulus(neurons, rnd_stim, dt)
             
-            for encoder, alpha, J_bias in zip(encoders, alphas, J_biases):
-                v = 0
-                i = 0
-                
-                spikes.append([])
-                
-                while i < len(stimulus):
-                    if v >= Vth:
-                        v = 0
-                        i += Tref * 1000 # Scaled to ms, since that is our step size here
-                        spikes[-1].append(1)
-                        spikes[-1].append(0)
-                    else:
-                        spikes[-1].append(0)
-                        i += 1
-                        
-                    if i < len(stimulus):
-                        J = alpha * np.dot(encoder, stimulus[int(i)]) + J_bias
-                        v += dt * (J - v) / Trc
-                
-            
-            h = []
-            time = np.linspace(0, T, N_time_samples)
-            Tau = 5 / 1000 # ms to s
-            for t in time:
-               h_t = exp(-t / Tau) / Tau
-               h.append(h_t)
-               
-            h = h / np.sum(h)
-            
-            A = np.zeros((N_neurons, N_time_samples))
-        
-            for i in range(N_neurons):
-                
-                for j in range(N_time_samples):
-                    
-                    if spikes[i][j]:
-                        
-                        A[i, j:] += spikes[i][j] * np.array(h[0: len(A[i]) - j])
-            
-            A = np.matrix(A)
-            # Becomes singular pretty fast. Do ridge regression?
-            #decoders = np.linalg.inv(A * A.T) * A * np.matrix(stimulus).T 
+            A = filter_spikes(N_neurons, N_time_samples, spikes, h)
             
             ro = 0.00000000001 * 200
             normalizer = N_neurons * ro * ro * np.eye(N_neurons)
-            decoders = np.linalg.inv(A * A.T + normalizer) * A * np.matrix(stimulus).T 
+            decoders = np.linalg.inv(A * A.T + normalizer) * A * np.matrix(rnd_stim).T 
             decoders = decoders.T
             
-            x_hat = (decoders * A).T
-        
-            plt.plot(time, x_hat, label="Reconstructed Stimulus")    
-            plt.plot(time, stimulus, label="Real Stimulus")
-            plt.grid()
-            plt.xlabel("Time")
-            plt.ylabel("Stimulus")
-            plt.title("Real vs Reconstructed Stimulus, " + str(N_neurons) + " Neurons")
-            plt.show()
-            
-            rmse = np.sqrt(np.mean(np.square(x_hat.T - stimulus)))
+            reconstructed_stim = (decoders * A).T
+
+            rmse = np.sqrt(np.mean(np.square(reconstructed_stim.T - rnd_stim)))
             RMSEs.append(rmse)
-            
-            #print("RMSE: ", rmse)
             
         avgd_RMSEs.append(sum(RMSEs) / run_len)
         print("Avgd RMSE for " + str(N_neurons) + " = " + str(avgd_RMSEs[-1]))
@@ -129,7 +81,14 @@ if __name__ == "__main__":
     plt.title("Log-Log plot of RMSE vs Neuron Count")
 
 
-
+    # 3B) [DONE]
+    
+    discussion_3B = """
+        It is observed that as the number of neurons increases, the RMSE decreases.
+        On a log-log plot, the behaviour is observed to be linear, suggesting some
+        kind of exponential relationship between the two variables, up until the
+        observed inflection point.
+    """
 
 
 
