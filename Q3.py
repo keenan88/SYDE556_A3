@@ -56,7 +56,7 @@ if __name__ == "__main__":
             # problems with A * A.T during decoder calculation
             spikes = get_neurons_spike_response_to_stimulus(neurons, rnd_stim, dt)
             
-            A = filter_spikes(N_neurons, N_time_samples, spikes, h)
+            A = filter_spikes(spikes, h)
             
             ro = 0.00000000001 * 200
             normalizer = N_neurons * ro * ro * np.eye(N_neurons)

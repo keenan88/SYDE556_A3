@@ -57,37 +57,37 @@ def generate_signal(T, dt, power_desired, limit_hz, seed):
 
 def get_neurons_spike_response_to_stimulus(neurons, stimulus, dt):
     
-    spikes = []
+    spike_response = np.zeros((len(neurons), len(stimulus)))
     Vth = 1
     
+    j = 0
     for neuron in neurons:
         v = 0
         i = 0
         
-        spikes.append([])
-        
         while i < len(stimulus):
             if v >= Vth:
                 v = 0
+                spike_response[int(j), int(i)] = 1
                 i += neuron['Tref'] * 1000 # Scaled to ms, since that is our step size here
-                spikes[-1].append(1)
-                spikes[-1].append(0)
             else:
-                spikes[-1].append(0)
                 i += 1
                 
             if i < len(stimulus):
                 dot = np.dot(neuron['encoder'], stimulus[int(i)])
                 J = neuron['alpha'] * dot + neuron['J_bias']
                 v += dt * (J - v) / neuron['Trc']
+                
+        j += 1
+                
     
-    return spikes
+    return spike_response
 
-def filter_spikes(N_neurons, N_time_samples, spikes, h):
-    A = np.zeros((N_neurons, N_time_samples))
+def filter_spikes(spikes, h):
+    A = np.zeros(spikes.shape)
 
-    for j in range(N_neurons):
-        for i in range(N_time_samples):
+    for j in range(A.shape[0]):
+        for i in range(A.shape[1]):
             
             if spikes[j][i]:
                 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     plt.show()
     
     # 2B) [DONE]
-    A = filter_spikes(len(neurons), N_time_samples, spikes, h)
+    A = filter_spikes(spikes, h)
                 
 
     A = np.matrix(A)

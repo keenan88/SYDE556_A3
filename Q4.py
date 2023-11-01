@@ -8,47 +8,20 @@ Created on Thu Sep 28 13:09:44 2023
 import numpy as np
 from IPython import get_ipython
 import matplotlib.pyplot as plt
-from math import exp
-from Q1 import G_LIF_at_x, generate_LIF_tuning_curves
-from Q2 import generate_signal
 
-def generate_spiking_output(encoders, alphas, J_biases, stimulus):
+from Q1 import generate_1D_LIF_neurons
+from Q2 import get_neurons_spike_response_to_stimulus, filter_spikes, get_pos_syn_filt
     
-    spikes = np.matrix(np.zeros((len(encoders), len(stimulus))))
-    Vth = 1
-    
-    neuron_idx = 0
-    for encoder, alpha, J_bias in zip(encoders, alphas, J_biases):
-        v = 0
-        time_idx = 0
-        
-        while time_idx < len(stimulus):
-            if v >= Vth:
-                v = 0
-                spikes[int(neuron_idx), int(time_idx)] = 1
-                time_idx += Tref * 1000 # Scaled to ms, since that is our step size here
-                
-            else:
-                time_idx += 1
-                
-            if time_idx < len(stimulus):
-                J = alpha * np.dot(encoder, stimulus[int(time_idx)]) + J_bias
-                v += dt * (J - v) / Trc
-                
-        neuron_idx += 1
-        
-    return spikes
-    
-def decode_spiky_output(A, N_neurons, stimulus):
+def decode_spiky_output(N_neurons, A, stimulus):
     
     ro = 0.0001 * 200
     normalizer = N_neurons * ro * ro * np.eye(N_neurons)
     decoders = np.linalg.inv(A * A.T + normalizer) * A * np.matrix(stimulus).T 
     decoders = decoders.T
     
-    x_hat = (decoders * A).T
+    reconstructed_stim = (decoders * A).T
     
-    return x_hat, decoders
+    return decoders, reconstructed_stim
 
 def plot_decoded_spiking_output(x_hat, stimulus_x, time, title):
     plt.plot(time, x_hat, label="Reconstructed Stimulus")    
@@ -69,46 +42,53 @@ if __name__ == "__main__":
 
     Tref = 2 / 1000 # Converted to seconds
     Trc = 20 / 1000 # Converted to seconds
+    N_neurons = 200
+    r = 1
+    
+    neuronsX = generate_1D_LIF_neurons(Tref, Trc, N_neurons, r)
+    neuronsY = generate_1D_LIF_neurons(Tref, Trc, N_neurons, r)
     
     T = 1
     dt = 0.001
     N_time_samples = int(T / dt)
     time = np.linspace(0, T, N_time_samples)
     
-    N_neurons = 200
-    range_of_stims = np.linspace(-1, 1, N_time_samples)
-    r = 1
+    _, h = get_pos_syn_filt(T, N_time_samples)
     
     # Define encoders
-    _, alphas_x, J_biases_x, encoders_x = \
-    generate_LIF_tuning_curves(range_of_stims, 
-                               Tref, 
-                               Trc, 
-                               N_neurons,
-                               r)
     stimulus_x = 2 * time + 1
-    x_spiking_output = generate_spiking_output(encoders_x, alphas_x, J_biases_x, stimulus_x)
+    x_spike_response = get_neurons_spike_response_to_stimulus(neuronsX, stimulus_x, dt)
+    x_spike_response = filter_spikes(x_spike_response, h)
     
-    # Define decoders
-    x_hat, decoders_x = decode_spiky_output(x_spiking_output, N_neurons, stimulus_x)
-    
-    # Define encoders
-    _, alphas_y, J_biases_y, encoders_y = \
-    generate_LIF_tuning_curves(range_of_stims, 
-                               Tref, 
-                               Trc, 
-                               N_neurons,
-                               r)
     stimulus_y = time
-    y_spiking_output = generate_spiking_output(encoders_y, alphas_y, J_biases_y, stimulus_y)
+    y_spike_response = get_neurons_spike_response_to_stimulus(neuronsY, stimulus_y, dt)
+    y_spike_response = filter_spikes(y_spike_response, h)
     
     # Define decoders
-    y_hat, decoders_y = decode_spiky_output(y_spiking_output, N_neurons, stimulus_y)
+    decoders_x, reconstructed_x = decode_spiky_output(N_neurons, x_spike_response, stimulus_x)
+    decoders_y, reconstructed_y = decode_spiky_output(N_neurons, y_spike_response, stimulus_y)
+
+    plt.plot(time, reconstructed_x, label="Reconstructed X", color='blue')
+    plt.plot(time, stimulus_x, label = "Original X", color='black')    
+    plt.grid()
+    plt.show()
+    
+    plt.plot(time, reconstructed_y, label="Reconstructed y", color='blue')
+    plt.plot(time, stimulus_y, label = "Original Y", color='black')    
+    plt.grid()
+    plt.show()
+    
+    
+    
+    # Define decoders
+#    
     
     # Validation. Looks good, x_hat is roughly decoding x, y_hay is roughly decoding y.
-    plot_decoded_spiking_output(x_hat, stimulus_x, time, "f(x) = 2x + 1")
-    plot_decoded_spiking_output(y_hat, stimulus_y, time, "f(y) = y")
+#    plot_decoded_spiking_output(x_hat, stimulus_x, time, "f(x) = 2x + 1")
+#    plot_decoded_spiking_output(y_hat, stimulus_y, time, "f(y) = y")
     
+    
+    """
     # 4A)
     
     stimulus_x_A = time - 1
@@ -159,7 +139,7 @@ if __name__ == "__main__":
     plot_decoded_spiking_output(x_hat_C, stimulus_x_C, time, "f(t) = 0.2 * sin(2*pi*t)")    
     plot_decoded_spiking_output(y_hat_C, stimulus_x_C, time, "f(y) = 0.2 * sin(2*pi*t)")
 
-
+    """
 
 
 
