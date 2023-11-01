@@ -8,8 +8,7 @@ Created on Thu Sep 28 13:09:44 2023
 import numpy as np
 from IPython import get_ipython
 import matplotlib.pyplot as plt
-from math import exp
-from Q1 import generate_1D_LIF_tuning_curves
+from Q1 import generate_1D_LIF_neurons
 from Q2 import generate_signal, get_neurons_spike_response_to_stimulus, \
                 get_pos_syn_filt, filter_spikes
 
@@ -32,7 +31,6 @@ if __name__ == "__main__":
     
     N_neurons = 20
     radius = 2
-    range_of_stims = np.linspace(-radius, radius, N_time_samples)
     
     # 3A) [DONE?]
     neuron_counts = [8, 16, 32, 64, 128, 256]
@@ -47,8 +45,7 @@ if __name__ == "__main__":
         for _ in range(run_len):
         
             # Change up the group of neurons each iteration
-            _, neurons = generate_1D_LIF_tuning_curves(
-                range_of_stims, 
+            neurons = generate_1D_LIF_neurons( 
                 Tref, 
                 Trc, 
                 N_neurons,

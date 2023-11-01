@@ -21,6 +21,28 @@ def G_LIF_at_x(alpha, x, encoder, J_bias, Tref, Trc):
         
     return G
 
+def generate_1D_LIF_neurons(Tref, Trc, num_neurons, radius):
+        
+    neurons = []
+    
+    for i in range(num_neurons):
+        
+        a_max = np.random.uniform(100, 200)
+        x_int = np.random.uniform(-radius, radius)
+        encoder = np.random.choice(np.array([-1, 1]))
+        
+        
+        # Alpha, J_bias
+        K = 1 / (1 - exp((Tref - 1/a_max)/Trc))
+        alpha = (K - 1) / (radius - np.dot(x_int, encoder))
+        J_bias = 1 - alpha * np.dot(x_int, encoder)
+        
+        neurons.append({'alpha': alpha, 'J_bias' : J_bias, 
+                        'encoder': encoder, 'Tref': Tref,
+                        'Trc' : Trc})
+
+    return neurons
+
 def generate_1D_LIF_tuning_curves(x_linspace, Tref, Trc, num_curves, radius):
     
     tuning_curves = []
