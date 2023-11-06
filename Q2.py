@@ -99,10 +99,10 @@ def filter_spikes(spikes, h):
                 
     return np.matrix(A)
 
-def get_pos_syn_filt(T, N):
+def get_pos_syn_filt(T, N, Tau = 5 / 1000):
     h = []
     time = np.linspace(0, T, N)
-    Tau = 5 / 1000 # ms to s
+    #Tau = 5 / 1000 # ms to s
     for t in time:
        h_t = exp(-t / Tau) / Tau
        h.append(h_t)
